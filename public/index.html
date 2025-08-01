@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Tic Tac Toe</title>
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --accent-color: #4ecdc4;
+            --text-color: #333;
+            --bg-color: #f8f9fa;
+            --border-color: #e1e5e9;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-color);
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            margin: 1rem;
+        }
+
+        .lobby-screen, .game-screen {
+            text-align: center;
+        }
+
+        .game-screen {
+            display: none;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .lobby-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-weight: 600;
+            color: var(--text-color);
+            text-align: left;
+        }
+
+        input {
+            padding: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--accent-color), #44a08d);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .game-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .player-info {
+            background: var(--bg-color);
+            padding: 1rem;
+            border-radius: 10px;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .player-info.active {
+            border-color: var(--primary-color);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+        }
+
+        .player-name {
+            font-weight: 600;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .player-symbol {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-width: 300px;
+            margin: 0 auto 2rem;
+            background: var(--border-color);
+            padding: 10px;
+            border-radius: 15px;
+        }
+
+        .cell {
+            aspect-ratio: 1;
+            background: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cell:hover:not(:disabled) {
+            background: var(--bg-color);
+            transform: scale(1.05);
+        }
+
+        .cell:disabled {
+            cursor: not-allowed;
+        }
+
+        .cell[data-player="X"] {
+            color: var(--primary-color);
+        }
+
+        .cell[data-player="O"] {
+            color: var(--accent-color);
+        }
+
+        .cell.winning-cell {
+            background: linear-gradient(45deg, var(--success-color), #20c997) !important;
+            color: white !important;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .status {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border-radius: 10px;
+            background: var(--bg-color);
+        }
+
+        .scores {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .score-item {
+            background: var(--bg-color);
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .score-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .score-label {
+            font-size: 0.9rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .room-info {
+            background: var(--bg-color);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .room-id {
+            font-family: 'Courier New', monospace;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .connection-status {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .connected {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .disconnected {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .waiting {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .chat-container {
+            margin-top: 2rem;
+            border-top: 2px solid var(--border-color);
+            padding-top: 2rem;
+        }
+
+        .chat-messages {
+            height: 150px;
+            overflow-y: auto;
+            background: var(--bg-color);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .chat-message {
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 5px;
+            background: white;
+        }
+
+        .chat-message.spectator {
+            background: #f0f0f0;
+            font-style: italic;
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 2px solid var(--border-color);
+            border-radius: 25px;
+            font-size: 0.9rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .spectator-indicator {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .game-info {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .scores {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Lobby Screen -->
+        <div class="lobby-screen" id="lobbyScreen">
+            <h1>🎮 Real-Time Tic Tac Toe</h1>
+
+            <div class="lobby-form">
+                <div class="form-group">
+                    <label for="playerName">Your Name</label>
+                    <input type="text" id="playerName" placeholder="Enter your name" maxlength="20" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="roomIdInput">Room ID (optional)</label>
+                    <input type="text" id="roomIdInput" placeholder="Enter room ID to join existing game" maxlength="10">
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="createRoom()">Create New Room</button>
+                    <button class="btn btn-secondary" onclick="joinRoom()">Join Room</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div class="game-screen" id="gameScreen">
+            <div class="room-info">
+                <div>
+                    <strong>Room ID:</strong> <span class="room-id" id="roomId">-</span>
+                </div>
+                <div class="connection-status connected" id="connectionStatus">Connected</div>
+            </div>
+
+            <div id="spectatorIndicator" class="spectator-indicator" style="display: none;">
+                👀 You are spectating this game
+            </div>
+
+            <div class="game-info">
+                <div class="player-info" id="playerX">
+                    <div class="player-name" id="playerXName">Waiting...</div>
+                    <div class="player-symbol">❌</div>
+                </div>
+                <div class="player-info" id="playerO">
+                    <div class="player-name" id="playerOName">Waiting...</div>
+                    <div class="player-symbol">⭕</div>
+                </div>
+            </div>
+
+            <div class="status" id="gameStatus">Waiting for players...</div>
+
+            <div class="board" id="gameBoard">
+                <button class="cell" onclick="makeMove(0)"></button>
+                <button class="cell" onclick="makeMove(1)"></button>
+                <button class="cell" onclick="makeMove(2)"></button>
+                <button class="cell" onclick="makeMove(3)"></button>
+                <button class="cell" onclick="makeMove(4)"></button>
+                <button class="cell" onclick="makeMove(5)"></button>
+                <button class="cell" onclick="makeMove(6)"></button>
+                <button class="cell" onclick="makeMove(7)"></button>
+                <button class="cell" onclick="makeMove(8)"></button>
+            </div>
+
+            <div class="scores">
+                <div class="score-item">
+                    <div class="score-value" id="scoreX">0</div>
+                    <div class="score-label">Player X Wins</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-value" id="draws">0</div>
+                    <div class="score-label">Draws</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-value" id="scoreO">0</div>
+                    <div class="score-label">Player O Wins</div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="resetGame()">New Game</button>
+                <button class="btn btn-primary" onclick="backToLobby()">Back to Lobby</button>
+            </div>
+
+            <!-- Chat Container -->
+            <div class="chat-container">
+                <h3>💬 Chat</h3>
+                <div class="chat-messages" id="chatMessages"></div>
+                <div class="chat-input-container">
+                    <input type="text" class="chat-input" id="chatInput" placeholder="Type a message..." maxlength="200">
+                    <button class="btn btn-primary" onclick="sendChatMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Victory Modal -->
+    <div class="modal" id="gameModal">
+        <div class="modal-content">
+            <h2 id="modalTitle">Game Over</h2>
+            <p id="modalMessage">The game has ended!</p>
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="closeGameModal()">Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // Real-Time Tic Tac Toe Client
+        class RealTimeTicTacToe {
+            constructor() {
+                this.socket = io();
+                this.playerName = '';
+                this.roomId = '';
+                this.playerSymbol = '';
+                this.isSpectator = false;
+                this.gameActive = false;
+                this.currentPlayer = 'X';
+
+                this.initSocketEvents();
+            }
+
+            initSocketEvents() {
+                // Connection events
+                this.socket.on('connect', () => {
+                    this.updateConnectionStatus('connected');
+                });
+
+                this.socket.on('disconnect', () => {
+                    this.updateConnectionStatus('disconnected');
+                });
+
+                // Room events
+                this.socket.on('room-created', (data) => {
+                    this.handleRoomJoined(data);
+                });
+
+                this.socket.on('game-ready', (data) => {
+                    this.handleGameReady(data);
+                });
+
+                this.socket.on('joined-as-spectator', (data) => {
+                    this.handleSpectatorJoin(data);
+                });
+
+                // Game events
+                this.socket.on('move-made', (data) => {
+                    this.handleMoveMade(data);
+                });
+
+                this.socket.on('game-won', (data) => {
+                    this.handleGameWon(data);
+                });
+
+                this.socket.on('game-draw', (data) => {
+                    this.handleGameDraw(data);
+                });
+
+                this.socket.on('game-reset', (data) => {
+                    this.handleGameReset(data);
+                });
+
+                // Player events
+                this.socket.on('player-disconnected', (data) => {
+                    this.updateStatus(`${data.playerName} disconnected. Waiting for reconnection...`);
+                    this.updateConnectionStatus('waiting');
+                });
+
+                this.socket.on('player-reconnected', (data) => {
+                    this.updateStatus(`${data.playerName} reconnected!`);
+                    this.updateConnectionStatus('connected');
+                });
+
+                // Chat events
+                this.socket.on('chat-message', (data) => {
+                    this.displayChatMessage(data);
+                });
+
+                // Error events
+                this.socket.on('room-error', (data) => {
+                    alert(data.message);
+                });
+
+                this.socket.on('move-error', (data) => {
+                    this.showModal('Invalid Move', data.message);
+                });
+            }
+
+            createRoom() {
+                const playerName = document.getElementById('playerName').value.trim();
+                if (!playerName) {
+                    alert('Please enter your name');
+                    return;
+                }
+
+                this.playerName = playerName;
+                this.socket.emit('create-room', { playerName });
+            }
+
+            joinRoom() {
+                const playerName = document.getElementById('playerName').value.trim();
+                const roomId = document.getElementById('roomIdInput').value.trim().toUpperCase();
+
+                if (!playerName) {
+                    alert('Please enter your name');
+                    return;
+                }
+
+                if (!roomId) {
+                    alert('Please enter a room ID');
+                    return;
+                }
+
+                this.playerName = playerName;
+                this.socket.emit('join-room', { roomId, playerName });
+            }
+
+            handleRoomJoined(data) {
+                this.roomId = data.roomId;
+                this.playerSymbol = data.playerSymbol;
+                this.switchToGameScreen();
+                this.updateGameState(data.gameRoom);
+                this.updateStatus('Waiting for another player to join...');
+            }
+
+            handleGameReady(data) {
+                this.gameActive = true;
+                this.updateGameState(data.gameRoom);
+                this.updateStatus('Game started! ' + (data.gameRoom.currentPlayer === this.playerSymbol ? 'Your turn!' : 'Opponent\'s turn'));
+            }
+
+            handleSpectatorJoin(data) {
+                this.isSpectator = true;
+                this.switchToGameScreen();
+                this.updateGameState(data.gameRoom);
+                document.getElementById('spectatorIndicator').style.display = 'block';
+                this.updateStatus('You are spectating this game');
+            }
+
+            handleMoveMade(data) {
+                const cell = document.getElementsByClassName('cell')[data.cellIndex];
+                cell.textContent = data.symbol;
+                cell.setAttribute('data-player', data.symbol);
+                cell.disabled = true;
+
+                this.updateGameState(data.gameRoom);
+
+                if (data.gameRoom.gameActive) {
+                    const isMyTurn = data.gameRoom.currentPlayer === this.playerSymbol;
+                    this.updateStatus(isMyTurn ? 'Your turn!' : `${data.playerName}'s turn`);
+                }
+            }
+
+            handleGameWon(data) {
+                this.gameActive = false;
+                this.highlightWinningCells(data.winningCells);
+                this.updateGameState(data.gameRoom);
+
+                const isWinner = data.winner === this.playerSymbol;
+                const message = this.isSpectator 
+                    ? `${data.winnerName} (${data.winner}) wins!`
+                    : (isWinner ? 'You won! 🎉' : `${data.winnerName} wins!`);
+
+                this.updateStatus(message);
+                this.showModal('Game Over', message);
+            }
+
+            handleGameDraw(data) {
+                this.gameActive = false;
+                this.updateGameState(data.gameRoom);
+                this.updateStatus('It\'s a draw! 🤝');
+                this.showModal('Game Over', 'It\'s a draw!');
+            }
+
+            handleGameReset(data) {
+                this.resetBoard();
+                this.updateGameState(data.gameRoom);
+                this.gameActive = data.gameRoom.gameActive;
+
+                if (this.gameActive) {
+                    const isMyTurn = data.gameRoom.currentPlayer === this.playerSymbol;
+                    this.updateStatus(isMyTurn ? 'Your turn!' : 'Opponent\'s turn');
+                } else {
+                    this.updateStatus('Waiting for players...');
+                }
+            }
+
+            makeMove(cellIndex) {
+                if (!this.gameActive || this.isSpectator) return;
+
+                const cell = document.getElementsByClassName('cell')[cellIndex];
+                if (cell.disabled || cell.textContent) return;
+
+                this.socket.emit('make-move', {
+                    roomId: this.roomId,
+                    cellIndex: cellIndex
+                });
+            }
+
+            resetGame() {
+                this.socket.emit('reset-game', { roomId: this.roomId });
+            }
+
+            sendChatMessage() {
+                const input = document.getElementById('chatInput');
+                const message = input.value.trim();
+
+                if (message) {
+                    this.socket.emit('chat-message', { message });
+                    input.value = '';
+                }
+            }
+
+            displayChatMessage(data) {
+                const chatMessages = document.getElementById('chatMessages');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `chat-message ${data.isSpectator ? 'spectator' : ''}`;
+
+                const prefix = data.isSpectator ? '👀 ' : '';
+                messageDiv.innerHTML = `
+                    <strong>${prefix}${data.playerName}:</strong> ${this.escapeHtml(data.message)}
+                    <small style="float: right; color: #666;">${data.timestamp}</small>
+                `;
+
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            switchToGameScreen() {
+                document.getElementById('lobbyScreen').style.display = 'none';
+                document.getElementById('gameScreen').style.display = 'block';
+                document.getElementById('roomId').textContent = this.roomId;
+            }
+
+            backToLobby() {
+                location.reload(); // Simple way to reset everything
+            }
+
+            updateGameState(gameRoom) {
+                // Update player names
+                if (gameRoom.players[0]) {
+                    document.getElementById('playerXName').textContent = gameRoom.players[0].name;
+                }
+                if (gameRoom.players[1]) {
+                    document.getElementById('playerOName').textContent = gameRoom.players[1].name;
+                }
+
+                // Update active player indicator
+                document.getElementById('playerX').classList.toggle('active', gameRoom.currentPlayer === 'X');
+                document.getElementById('playerO').classList.toggle('active', gameRoom.currentPlayer === 'O');
+
+                // Update scores
+                document.getElementById('scoreX').textContent = gameRoom.scores.X;
+                document.getElementById('scoreO').textContent = gameRoom.scores.O;
+                document.getElementById('draws').textContent = gameRoom.scores.draws;
+
+                // Update board
+                gameRoom.board.forEach((cell, index) => {
+                    const cellElement = document.getElementsByClassName('cell')[index];
+                    cellElement.textContent = cell;
+                    if (cell) {
+                        cellElement.setAttribute('data-player', cell);
+                        cellElement.disabled = true;
+                    }
+                });
+
+                this.currentPlayer = gameRoom.currentPlayer;
+                this.gameActive = gameRoom.gameActive;
+            }
+
+            updateStatus(message) {
+                document.getElementById('gameStatus').textContent = message;
+            }
+
+            updateConnectionStatus(status) {
+                const statusElement = document.getElementById('connectionStatus');
+                statusElement.className = `connection-status ${status}`;
+
+                switch (status) {
+                    case 'connected':
+                        statusElement.textContent = 'Connected';
+                        break;
+                    case 'disconnected':
+                        statusElement.textContent = 'Disconnected';
+                        break;
+                    case 'waiting':
+                        statusElement.textContent = 'Waiting...';
+                        break;
+                }
+            }
+
+            resetBoard() {
+                const cells = document.getElementsByClassName('cell');
+                Array.from(cells).forEach(cell => {
+                    cell.textContent = '';
+                    cell.disabled = false;
+                    cell.removeAttribute('data-player');
+                    cell.classList.remove('winning-cell');
+                    cell.style.background = '';
+                    cell.style.color = '';
+                });
+            }
+
+            highlightWinningCells(winningCells) {
+                winningCells.forEach(index => {
+                    const cell = document.getElementsByClassName('cell')[index];
+                    cell.classList.add('winning-cell');
+                });
+            }
+
+            showModal(title, message) {
+                document.getElementById('modalTitle').textContent = title;
+                document.getElementById('modalMessage').textContent = message;
+                document.getElementById('gameModal').classList.add('show');
+            }
+
+            closeModal() {
+                document.getElementById('gameModal').classList.remove('show');
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+        }
+
+        // Initialize the game
+        let game;
+        document.addEventListener('DOMContentLoaded', () => {
+            game = new RealTimeTicTacToe();
+        });
+
+        // Global functions for HTML onclick events
+        function createRoom() {
+            game.createRoom();
+        }
+
+        function joinRoom() {
+            game.joinRoom();
+        }
+
+        function makeMove(index) {
+            game.makeMove(index);
+        }
+
+        function resetGame() {
+            game.resetGame();
+        }
+
+        function backToLobby() {
+            game.backToLobby();
+        }
+
+        function sendChatMessage() {
+            game.sendChatMessage();
+        }
+
+        function closeGameModal() {
+            game.closeModal();
+        }
+
+        // Chat input enter key support
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('chatInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendChatMessage();
+                }
+            });
+        });
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (e.key >= '1' && e.key <= '9') {
+                const index = parseInt(e.key) - 1;
+                makeMove(index);
+            }
+            if (e.key === 'r' || e.key === 'R') {
+                resetGame();
+            }
+        });
+    </script>
+</body>
+</html>
